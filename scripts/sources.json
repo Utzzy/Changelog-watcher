@@ -1,0 +1,42 @@
+[
+  {
+    "id": "cadwork",
+    "name": "cadwork",
+    "url": "https://kb.cadwork.ch/en/news/manual",
+    "method": "regex",
+    "version_regex": "[Vv]ersion\\s*(\\d{2,4}(?:\\.\\d+)?)",
+    "notes": "cadwork Knowledgebase 'News' overview page. Adjust if cadwork restructures the KB."
+  },
+  {
+    "id": "allplan",
+    "name": "Allplan",
+    "url": "https://connect.allplan.com/en/help/current-version.html",
+    "method": "hash",
+    "version_regex": null,
+    "notes": "PLACEHOLDER URL - Allplan release notes often sit behind Allplan Connect (login). Please verify/replace this URL with the actual public release-notes page you have access to. Falls back to full-page hashing (less precise: triggers on ANY page change, not just a version bump)."
+  },
+  {
+    "id": "rhino",
+    "name": "Rhino (McNeel)",
+    "url": "https://www.rhino3d.com/download/rhino/8/changelog",
+    "method": "regex",
+    "version_regex": "(\\d+\\.\\d+\\.\\d{4,5}\\.\\d{4,5})",
+    "notes": "Rhino changelog page for the 8.x line. Update the URL when Rhino 9 becomes current."
+  },
+  {
+    "id": "dlubal_rfem",
+    "name": "Dlubal RFEM",
+    "url": "https://community.dlubal.com/c/updates-news.rss",
+    "method": "rss",
+    "version_regex": null,
+    "notes": "Dlubal Community 'Updates & News' category RSS feed. Verify the category slug/id still resolves to this .rss URL; Discourse forums expose <category-url>.rss."
+  },
+  {
+    "id": "dlubal_rstab",
+    "name": "Dlubal RSTAB",
+    "url": "https://community.dlubal.com/c/updates-news.rss",
+    "method": "rss",
+    "version_regex": null,
+    "notes": "Same feed as RFEM (Dlubal posts combined RFEM/RSTAB 'What's New' updates). Kept as a separate entry only so it can be split later if Dlubal ever separates the feeds."
+  }
+]
