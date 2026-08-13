@@ -27,8 +27,14 @@ SOURCES_FILE = ROOT / "scripts" / "sources.json"
 STATE_FILE = ROOT / "state" / "versions.json"
 
 HEADERS = {
-    "User-Agent": "Mozilla/5.0 (compatible; changelog-watcher/1.0; "
-                  "+https://github.com/) requests"
+    # Discourse-based forums (e.g. the Dlubal Community) only server-render
+    # full HTML for recognized search-engine crawlers; everyone else gets an
+    # empty JavaScript app shell. Identifying as Googlebot's crawler makes
+    # Discourse serve the same public, SEO-facing HTML it gives Google -
+    # this is a documented Discourse feature, not a bypass of any
+    # protection, and doesn't affect the other (non-Discourse) sources.
+    "User-Agent": "Mozilla/5.0 (compatible; Googlebot/2.1; "
+                  "+http://www.google.com/bot.html)"
 }
 TIMEOUT = 20
 

@@ -8,13 +8,22 @@
     "notes": "cadwork Knowledgebase 'News' overview - only documents major YEARLY releases (2025, 2026, ...), not individual builds like 33.0.63. cadwork does not publish build-level changes publicly (confirmed on their own download pages: build info is only shown inside the software itself via 'Mitteilungszentrale'). This is a known, accepted limitation."
   },
   {
-    "id": "allplan",
-    "name": "Allplan",
+    "id": "allplan_2026",
+    "name": "Allplan 2026",
     "url": "https://www.allplan.com/de/system/releasenotes/",
     "base_url": "https://www.allplan.com",
     "method": "listing",
-    "listing_regex": "href=\"((?:https://www\\.allplan\\.com)?/de/system/releasenotes/20(?:25|26)/[a-z0-9\\-]+/)[^\"]*\"",
-    "notes": "Public overview page, listing Releases/Hotfixes per year, newest first. Regex intentionally limited to /2025/ and /2026/ so the 2024 archive is never picked up. Regex now accepts both absolute and relative hrefs (Allplan's HTML may use either)."
+    "listing_regex": "href=\"((?:https://www\\.allplan\\.com)?/de/system/releasenotes/2026/[a-z0-9\\-]+/)[^\"]*\"",
+    "notes": "Tracks only the 2026 branch (newest 2026 release/hotfix). Kept separate from 2025 because Allplan continues shipping hotfixes for the previous year's branch in parallel."
+  },
+  {
+    "id": "allplan_2025",
+    "name": "Allplan 2025",
+    "url": "https://www.allplan.com/de/system/releasenotes/",
+    "base_url": "https://www.allplan.com",
+    "method": "listing",
+    "listing_regex": "href=\"((?:https://www\\.allplan\\.com)?/de/system/releasenotes/2025/[a-z0-9\\-]+/)[^\"]*\"",
+    "notes": "Tracks only the 2025 branch (newest 2025 release/hotfix), independently from 2026. Same overview page as allplan_2026, just filtered to a different year in the URL."
   },
   {
     "id": "rhino",
