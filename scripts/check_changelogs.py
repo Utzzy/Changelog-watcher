@@ -146,6 +146,34 @@ def main():
     for source in sources:
         sid = source["id"]
         try:
+            if source["method"] == "listing":
+                # Overview page only lists titles/links, not the actual change
+                # text. Find the newest matching entry, then fetch that
+                # specific detail page separately for the excerpt.
+                overview_raw = fetch(source["url"])
+                match = re.search(source["listing_regex"], overview_raw)
+                if not match:
+                    errors.append(
+                        f"{source['name']}: kein Eintrag über die Listing-Regex "
+                        f"gefunden (Seitenstruktur evtl. geändert?)"
+                    )
+                    continue
+                detail_url = match.group(1)
+                marker = detail_url  # each release has its own URL -> unique
+                old = state.get(sid)
+                if old != marker:
+                    detail_raw = fetch(detail_url)
+                    changed.append({
+                        "id": sid,
+                        "name": source["name"],
+                        "old": old,
+                        "new": marker,
+                        "url": detail_url,
+                        "excerpt": strip_html(detail_raw)[:6000],
+                    })
+                    state[sid] = marker
+                continue
+
             raw = fetch(source["url"])
             marker = extract_marker(source, raw)
             if marker is None:

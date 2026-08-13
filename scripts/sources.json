@@ -10,10 +10,10 @@
   {
     "id": "allplan",
     "name": "Allplan",
-    "url": "https://connect.allplan.com/en/help/current-version.html",
-    "method": "hash",
-    "version_regex": null,
-    "notes": "PLACEHOLDER URL - Allplan release notes often sit behind Allplan Connect (login). Please verify/replace this URL with the actual public release-notes page you have access to. Falls back to full-page hashing (less precise: triggers on ANY page change, not just a version bump)."
+    "url": "https://www.allplan.com/de/system/releasenotes/",
+    "method": "listing",
+    "listing_regex": "href=\"(https://www\\.allplan\\.com/de/system/releasenotes/20(?:25|26)/([a-z0-9\\-]+)/)\"",
+    "notes": "Oeffentliche Uebersichtsseite, listet Releases/Hotfixes je Jahr, neueste zuerst. Der Regex ist bewusst auf /2025/ und /2026/ begrenzt, damit die 2024er-Archivseite nie als 'neu' erkannt wird. Wird ein neuer Eintrag gefunden, ruft das Skript zusaetzlich die verlinkte Detailseite ab, da die Uebersicht selbst keine Aenderungstexte enthaelt, nur Titel."
   },
   {
     "id": "rhino",

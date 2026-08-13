@@ -57,19 +57,23 @@ Im Repo: **Settings → Secrets and variables → Actions → New repository sec
 
 ## 5. Quellen prüfen/anpassen
 
-Öffne `scripts/sources.json`. Für **Allplan** ist aktuell nur eine
-Platzhalter-URL eingetragen (die echten Release Notes liegen bei Allplan oft
-hinter einem Login-Portal) — bitte durch eine URL ersetzen, die du ohne
-Login erreichen kannst, oder das Konto/Portal-Szenario mit mir zusammen
-klären. Bei den anderen Quellen (cadwork, Rhino, Dlubal) lohnt sich ein
-kurzer Blick, ob die URLs/Regex noch zur aktuellen Seitenstruktur passen —
-Hersteller ändern ihre Webseiten gelegentlich.
+Öffne `scripts/sources.json`, falls du etwas anpassen willst. Bei allen
+Quellen lohnt sich gelegentlich ein kurzer Blick, ob URLs/Regex noch zur
+aktuellen Seitenstruktur passen — Hersteller ändern ihre Webseiten von Zeit
+zu Zeit.
 
 Jede Quelle hat ein `method`-Feld:
 - `regex`: sucht eine Versionsnummer per Regex im Seitentext
 - `rss`: nimmt den Titel des neuesten Feed-Eintrags
+- `listing`: für Übersichtsseiten, die nur Titel/Links aber keine
+  Änderungstexte enthalten (z. B. Allplan) — findet den neuesten Eintrag
+  und lädt zusätzlich dessen Detailseite für die Zusammenfassung
 - `hash`: Fallback, wenn es keine saubere Versionsnummer gibt — löst bei
   *jeder* Textänderung der Seite aus (weniger präzise)
+
+**Allplan** ist bereits fertig konfiguriert: Die Erkennung ist bewusst auf
+Einträge unter `/2025/` und `/2026/` begrenzt, damit alte 2024er-Releases
+nie als "neu" durchgehen.
 
 ## 6. Testen
 
