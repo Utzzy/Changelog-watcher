@@ -36,11 +36,10 @@
   {
     "id": "dlubal",
     "name": "Dlubal RFEM/RSTAB",
-    "url": "https://community.dlubal.com/tag/dlubal-update/19",
+    "method": "discourse_tag_json",
+    "tag_url": "https://community.dlubal.com/tag/dlubal-update/19",
     "base_url": "https://community.dlubal.com",
-    "method": "listing",
-    "listing_regex": "href=\"((?:https://community\\.dlubal\\.com)?/t/[a-z0-9\\-]+/\\d+)[^\"]*\"",
-    "notes": "Dlubal Community forum, filtered to the 'dlubal-update' tag so only real update posts show up (the raw category also contains webinar announcements etc., which this tag excludes). Covers RFEM, RSTAB, RSECTION and RWIND updates in one feed - kept as a single source instead of two to avoid duplicate mails for the same post."
+    "notes": "Uses Discourse's public JSON API (append .json to any route) instead of scraping HTML. community.dlubal.com only fully server-renders HTML for verified crawlers, and spoofing a Googlebot User-Agent was not reliably honored (likely intercepted by a firewall/CDN in front of Discourse). The JSON API is not subject to that gating and works the same way regardless of caller identity."
   }
 ]
 

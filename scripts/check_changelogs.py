@@ -187,6 +187,42 @@ def main():
                     state[sid] = marker
                 continue
 
+            if source["method"] == "discourse_tag_json":
+                # Discourse renders full HTML only for verified crawlers;
+                # its JSON API (any route + '.json') isn't gated that way,
+                # so we use it directly instead of scraping HTML.
+                tag_json_url = source["tag_url"].rstrip("/") + ".json"
+                tag_data = json.loads(fetch(tag_json_url))
+                topics = tag_data.get("topic_list", {}).get("topics", [])
+                if not topics:
+                    errors.append(
+                        f"{source['name']}: keine Themen in der "
+                        f"Discourse-JSON-Antwort gefunden (Tag umbenannt "
+                        f"oder Forum umgebaut?)"
+                    )
+                    continue
+                newest = topics[0]
+                marker = str(newest.get("id"))
+                old = state.get(sid)
+                if old != marker:
+                    slug = newest.get("slug", "")
+                    topic_id = newest.get("id")
+                    base = source["base_url"].rstrip("/")
+                    topic_json_url = f"{base}/t/{slug}/{topic_id}.json"
+                    topic_data = json.loads(fetch(topic_json_url))
+                    posts = topic_data.get("post_stream", {}).get("posts", [])
+                    cooked_html = posts[0]["cooked"] if posts else ""
+                    changed.append({
+                        "id": sid,
+                        "name": source["name"],
+                        "old": old,
+                        "new": marker,
+                        "url": f"{base}/t/{slug}/{topic_id}",
+                        "excerpt": strip_html(cooked_html)[:6000],
+                    })
+                    state[sid] = marker
+                continue
+
             if source["method"] == "discourse_topic":
                 # Tracks a single growing forum thread (e.g. McNeel's
                 # "Rhino 8 Service Release Available") via Discourse's public
@@ -298,12 +334,9 @@ def main():
     if errors:
         body += "\n\n---\nHinweise/Fehler bei anderen Quellen:\n" + "\n".join(errors)
 
-    try:
-        send_mail(subject, body)
-        print(f"Mail verschickt für: {names}")
-    except Exception as e:  # noqa: BLE001
-        print(f"Fehler beim Mailversand: {e}", file=sys.stderr)
+    send_mail(subject, body)
     save_json(STATE_FILE, state)
+    print(f"Mail verschickt für: {names}")
 
 
 if __name__ == "__main__":
