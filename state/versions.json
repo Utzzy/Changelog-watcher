@@ -1,7 +1,6 @@
 {
-  "cadwork": "2026",
-  "allplan": "https://www.allplan.com/de/system/releasenotes/2026/allplan-2026-1-5/",
-  "rhino": "40",
-  "allplan_2026": "https://www.allplan.com/de/system/releasenotes/2026/allplan-2026-1-5/",
-  "allplan_2025": "https://www.allplan.com/de/system/releasenotes/2025/allplan-2025-1-10/"
+  "cadwork": "2025",
+  "rhino": "39",
+  "allplan_2026": "https://www.allplan.com/de/system/releasenotes/2026/allplan-2026-1-4/",
+  "allplan_2025": "https://www.allplan.com/de/system/releasenotes/2025/allplan-2025-1-9/"
 }
