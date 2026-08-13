@@ -13,7 +13,7 @@
     "url": "https://www.allplan.com/de/system/releasenotes/",
     "base_url": "https://www.allplan.com",
     "method": "listing",
-    "listing_regex": "href=\"(?:https://www\\.allplan\\.com)?(/de/system/releasenotes/20(?:25|26)/[a-z0-9\\-]+/)\"",
+    "listing_regex": "href=\"((?:https://www\\.allplan\\.com)?/de/system/releasenotes/20(?:25|26)/[a-z0-9\\-]+/)[^\"]*\"",
     "notes": "Public overview page, listing Releases/Hotfixes per year, newest first. Regex intentionally limited to /2025/ and /2026/ so the 2024 archive is never picked up. Regex now accepts both absolute and relative hrefs (Allplan's HTML may use either)."
   },
   {
@@ -30,7 +30,7 @@
     "url": "https://community.dlubal.com/tag/dlubal-update/19",
     "base_url": "https://community.dlubal.com",
     "method": "listing",
-    "listing_regex": "href=\"(?:https://community\\.dlubal\\.com)?(/t/[a-z0-9\\-]+/\\d+)\"",
+    "listing_regex": "href=\"((?:https://community\\.dlubal\\.com)?/t/[a-z0-9\\-]+/\\d+)[^\"]*\"",
     "notes": "Dlubal Community forum, filtered to the 'dlubal-update' tag so only real update posts show up (the raw category also contains webinar announcements etc., which this tag excludes). Covers RFEM, RSTAB, RSECTION and RWIND updates in one feed - kept as a single source instead of two to avoid duplicate mails for the same post."
   }
 ]

@@ -153,12 +153,14 @@ def main():
                 overview_raw = fetch(source["url"])
                 match = re.search(source["listing_regex"], overview_raw)
                 if not match:
+                    snippet = re.sub(r"\s+", " ", overview_raw)[:300]
                     errors.append(
                         f"{source['name']}: kein Eintrag über die Listing-Regex "
-                        f"gefunden (Seitenstruktur evtl. geändert?)"
+                        f"gefunden (Seitenstruktur evtl. geändert?). "
+                        f"Seitenanfang zur Diagnose: {snippet!r}"
                     )
                     continue
-                captured = match.group(1)
+                captured = match.group(1).split("?")[0]
                 if captured.startswith("http"):
                     detail_url = captured
                 else:
