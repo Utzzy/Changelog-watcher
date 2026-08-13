@@ -298,9 +298,12 @@ def main():
     if errors:
         body += "\n\n---\nHinweise/Fehler bei anderen Quellen:\n" + "\n".join(errors)
 
-    send_mail(subject, body)
+    try:
+        send_mail(subject, body)
+        print(f"Mail verschickt für: {names}")
+    except Exception as e:  # noqa: BLE001
+        print(f"Fehler beim Mailversand: {e}", file=sys.stderr)
     save_json(STATE_FILE, state)
-    print(f"Mail verschickt für: {names}")
 
 
 if __name__ == "__main__":
