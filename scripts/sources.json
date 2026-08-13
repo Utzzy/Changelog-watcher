@@ -5,38 +5,33 @@
     "url": "https://kb.cadwork.ch/en/news/manual",
     "method": "regex",
     "version_regex": "[Vv]ersion\\s*(\\d{2,4}(?:\\.\\d+)?)",
-    "notes": "cadwork Knowledgebase 'News' overview page. Adjust if cadwork restructures the KB."
+    "notes": "cadwork Knowledgebase 'News' overview - only documents major YEARLY releases (2025, 2026, ...), not individual builds like 33.0.63. cadwork does not publish build-level changes publicly (confirmed on their own download pages: build info is only shown inside the software itself via 'Mitteilungszentrale'). This is a known, accepted limitation."
   },
   {
     "id": "allplan",
     "name": "Allplan",
     "url": "https://www.allplan.com/de/system/releasenotes/",
+    "base_url": "https://www.allplan.com",
     "method": "listing",
-    "listing_regex": "href=\"(https://www\\.allplan\\.com/de/system/releasenotes/20(?:25|26)/([a-z0-9\\-]+)/)\"",
-    "notes": "Oeffentliche Uebersichtsseite, listet Releases/Hotfixes je Jahr, neueste zuerst. Der Regex ist bewusst auf /2025/ und /2026/ begrenzt, damit die 2024er-Archivseite nie als 'neu' erkannt wird. Wird ein neuer Eintrag gefunden, ruft das Skript zusaetzlich die verlinkte Detailseite ab, da die Uebersicht selbst keine Aenderungstexte enthaelt, nur Titel."
+    "listing_regex": "href=\"(?:https://www\\.allplan\\.com)?(/de/system/releasenotes/20(?:25|26)/[a-z0-9\\-]+/)\"",
+    "notes": "Public overview page, listing Releases/Hotfixes per year, newest first. Regex intentionally limited to /2025/ and /2026/ so the 2024 archive is never picked up. Regex now accepts both absolute and relative hrefs (Allplan's HTML may use either)."
   },
   {
     "id": "rhino",
     "name": "Rhino (McNeel)",
-    "url": "https://www.rhino3d.com/download/rhino/8/changelog",
-    "method": "regex",
-    "version_regex": "(\\d+\\.\\d+\\.\\d{4,5}\\.\\d{4,5})",
-    "notes": "Rhino changelog page for the 8.x line. Update the URL when Rhino 9 becomes current."
+    "method": "discourse_topic",
+    "topic_url": "https://discourse.mcneel.com/t/rhino-8-service-release-available/169739",
+    "topic_id": "169739",
+    "notes": "The main rhino3d.com site renders its changelog via JavaScript and cannot be read with a plain HTTP request. Instead this tracks the McNeel forum thread where every new Service Release is posted as a reply. Uses Discourse's public JSON API (topic.json + posts/by_number). When Rhino 9 becomes current, McNeel will likely start an equivalent new thread - update topic_url/topic_id then."
   },
   {
-    "id": "dlubal_rfem",
-    "name": "Dlubal RFEM",
-    "url": "https://community.dlubal.com/c/updates-news.rss",
-    "method": "rss",
-    "version_regex": null,
-    "notes": "Dlubal Community 'Updates & News' category RSS feed. Verify the category slug/id still resolves to this .rss URL; Discourse forums expose <category-url>.rss."
-  },
-  {
-    "id": "dlubal_rstab",
-    "name": "Dlubal RSTAB",
-    "url": "https://community.dlubal.com/c/updates-news.rss",
-    "method": "rss",
-    "version_regex": null,
-    "notes": "Same feed as RFEM (Dlubal posts combined RFEM/RSTAB 'What's New' updates). Kept as a separate entry only so it can be split later if Dlubal ever separates the feeds."
+    "id": "dlubal",
+    "name": "Dlubal RFEM/RSTAB",
+    "url": "https://community.dlubal.com/tag/dlubal-update/19",
+    "base_url": "https://community.dlubal.com",
+    "method": "listing",
+    "listing_regex": "href=\"(?:https://community\\.dlubal\\.com)?(/t/[a-z0-9\\-]+/\\d+)\"",
+    "notes": "Dlubal Community forum, filtered to the 'dlubal-update' tag so only real update posts show up (the raw category also contains webinar announcements etc., which this tag excludes). Covers RFEM, RSTAB, RSECTION and RWIND updates in one feed - kept as a single source instead of two to avoid duplicate mails for the same post."
   }
 ]
+

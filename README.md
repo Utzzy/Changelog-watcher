@@ -63,17 +63,21 @@ aktuellen Seitenstruktur passen — Hersteller ändern ihre Webseiten von Zeit
 zu Zeit.
 
 Jede Quelle hat ein `method`-Feld:
-- `regex`: sucht eine Versionsnummer per Regex im Seitentext
-- `rss`: nimmt den Titel des neuesten Feed-Eintrags
+- `regex`: sucht eine Versionsnummer per Regex im Seitentext (cadwork)
 - `listing`: für Übersichtsseiten, die nur Titel/Links aber keine
-  Änderungstexte enthalten (z. B. Allplan) — findet den neuesten Eintrag
+  Änderungstexte enthalten (Allplan, Dlubal) — findet den neuesten Eintrag
   und lädt zusätzlich dessen Detailseite für die Zusammenfassung
-- `hash`: Fallback, wenn es keine saubere Versionsnummer gibt — löst bei
-  *jeder* Textänderung der Seite aus (weniger präzise)
+- `discourse_topic`: für Foren-Threads, in denen jede neue Version als
+  Antwort gepostet wird (Rhino) — nutzt die öffentliche JSON-API des
+  Discourse-Forums statt HTML-Scraping, weil die eigentliche rhino3d.com-
+  Seite ihre Inhalte per JavaScript nachlädt und mit einem einfachen
+  HTTP-Request leer bleibt
 
-**Allplan** ist bereits fertig konfiguriert: Die Erkennung ist bewusst auf
-Einträge unter `/2025/` und `/2026/` begrenzt, damit alte 2024er-Releases
-nie als "neu" durchgehen.
+**Bekannte Grenze bei cadwork:** cadwork veröffentlicht die Änderungen
+einzelner Builds (z. B. 33.0.63 → 33.0.64) nirgends öffentlich im Web —
+das läuft nur über die "Mitteilungszentrale" direkt in der Software. Die
+hier eingerichtete Quelle erkennt deshalb nur neue **Jahres-Hauptversionen**
+(z. B. cadwork 2026 → cadwork 2027), nicht jedes einzelne Build dazwischen.
 
 ## 6. Testen
 
@@ -84,6 +88,14 @@ nie als "neu" durchgehen.
    einmal.
 3. Ab dem zweiten Lauf bekommst du nur dann eine Mail, wenn sich seit dem
    letzten Lauf wirklich etwas geändert hat.
+4. **Wichtig:** Auch wenn der Workflow-Lauf komplett grün ist, kann eine
+   einzelne Quelle im Hintergrund gescheitert sein (das Skript überspringt
+   fehlerhafte Quellen, statt den ganzen Lauf abzubrechen). Prüfe nach
+   jedem Testlauf kurz `state/versions.json` im Code-Tab — dort sollte für
+   jede der 4 Quellen (cadwork, allplan, rhino, dlubal) ein Eintrag stehen.
+   Fehlt einer, öffne den Lauf unter Actions → Job → Schritt
+   "Run changelog check" und schau in den Log-Zeilen nach "Hinweise" bzw.
+   Fehlermeldungen.
 
 ## 7. Zeitplan anpassen
 

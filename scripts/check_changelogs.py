@@ -158,7 +158,12 @@ def main():
                         f"gefunden (Seitenstruktur evtl. geändert?)"
                     )
                     continue
-                detail_url = match.group(1)
+                captured = match.group(1)
+                if captured.startswith("http"):
+                    detail_url = captured
+                else:
+                    base = source.get("base_url", "").rstrip("/")
+                    detail_url = base + "/" + captured.lstrip("/")
                 marker = detail_url  # each release has its own URL -> unique
                 old = state.get(sid)
                 if old != marker:
@@ -170,6 +175,41 @@ def main():
                         "new": marker,
                         "url": detail_url,
                         "excerpt": strip_html(detail_raw)[:6000],
+                    })
+                    state[sid] = marker
+                continue
+
+            if source["method"] == "discourse_topic":
+                # Tracks a single growing forum thread (e.g. McNeel's
+                # "Rhino 8 Service Release Available") via Discourse's public
+                # JSON API instead of scraping JS-rendered HTML.
+                topic_json_url = source["topic_url"].rstrip("/") + ".json"
+                topic_data = json.loads(fetch(topic_json_url))
+                posts_count = topic_data.get("posts_count")
+                if posts_count is None:
+                    errors.append(
+                        f"{source['name']}: 'posts_count' nicht in der "
+                        f"Discourse-API-Antwort gefunden (Forum umgebaut?)"
+                    )
+                    continue
+                marker = str(posts_count)
+                old = state.get(sid)
+                if old != marker:
+                    highest = topic_data.get("highest_post_number", posts_count)
+                    topic_id = source["topic_id"]
+                    post_json_url = (
+                        f"https://discourse.mcneel.com/posts/by_number/"
+                        f"{topic_id}/{highest}.json"
+                    )
+                    post_data = json.loads(fetch(post_json_url))
+                    cooked_html = post_data.get("cooked", "")
+                    changed.append({
+                        "id": sid,
+                        "name": source["name"],
+                        "old": old,
+                        "new": marker,
+                        "url": f"{source['topic_url']}/{highest}",
+                        "excerpt": strip_html(cooked_html)[:6000],
                     })
                     state[sid] = marker
                 continue
