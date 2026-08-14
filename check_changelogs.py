@@ -129,17 +129,20 @@ def send_mail(subject, body):
     user = os.environ["SMTP_USER"]
     pw = os.environ["SMTP_PASS"]
     mail_from = os.environ.get("MAIL_FROM", user)
-    mail_to = os.environ["MAIL_TO"]
+    # MAIL_TO may contain one or several comma-separated addresses,
+    # e.g. "a@example.com, b@example.com"
+    recipients = [addr.strip() for addr in os.environ["MAIL_TO"].split(",")
+                  if addr.strip()]
 
     msg = MIMEText(body, "plain", "utf-8")
     msg["Subject"] = subject
     msg["From"] = mail_from
-    msg["To"] = mail_to
+    msg["To"] = ", ".join(recipients)
 
     with smtplib.SMTP(host, port, timeout=30) as server:
         server.starttls()
         server.login(user, pw)
-        server.sendmail(mail_from, [mail_to], msg.as_string())
+        server.sendmail(mail_from, recipients, msg.as_string())
 
 
 def main():
