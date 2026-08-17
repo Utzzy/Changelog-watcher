@@ -1,6 +1,6 @@
 # Changelog Watcher (cadwork, Allplan, Rhino, Dlubal RFEM/RSTAB)
 
-Prüft alle 6 Stunden per GitHub Actions, ob es bei den konfigurierten
+Prüft Montags bis Freitags jeweils um 8 Uhr per GitHub Actions, ob es bei den konfigurierten
 Programmen eine neue Version/einen neuen Release-Post gibt. Bei einer
 Änderung lässt das Skript **GitHub Copilot CLI** eine kurze deutsche
 Zusammenfassung schreiben und verschickt sie per Mail. Ohne Änderung
