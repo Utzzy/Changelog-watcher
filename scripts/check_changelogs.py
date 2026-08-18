@@ -79,7 +79,33 @@ def fetch_via_login_and_click(
                 email,
             )
             page.fill('input[type="password"]:visible', password)
-            page.press('input[type="password"]:visible', "Enter")
+
+            login_button = page.get_by_role(
+                "button", name="Login", exact=True
+            )
+            if login_button.count() > 0:
+                login_button.first.click(timeout=15000)
+            else:
+                # Diagnostic: list every visible button/submit-like element
+                # so we can see what's actually clickable on this form.
+                candidates = page.locator(
+                    'button:visible, input[type="submit"]:visible, '
+                    '[role="button"]:visible'
+                )
+                found = []
+                for i in range(min(candidates.count(), 15)):
+                    try:
+                        found.append(candidates.nth(i).inner_text()[:40])
+                    except Exception:
+                        found.append("(kein Text)")
+                print(
+                    f"[Diagnose] {label}: kein <button>'Login' gefunden. "
+                    f"Sichtbare Buttons: {found}",
+                    file=sys.stderr,
+                )
+                # Fallback: Enter key in the password field.
+                page.press('input[type="password"]:visible', "Enter")
+
             page.wait_for_timeout(4000)
             login_snippet = re.sub(r"\s+", " ", page.inner_text("body"))[:300]
             print(
