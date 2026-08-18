@@ -79,12 +79,7 @@ def fetch_via_login_and_click(
                 email,
             )
             page.fill('input[type="password"]:visible', password)
-            login_form = page.locator('form:has(input[type="password"])')
-            login_form.locator(
-                'button:has-text("Login"), '
-                'input[type="submit"], '
-                'button[type="submit"]'
-            ).first.click()
+            page.press('input[type="password"]:visible', "Enter")
             page.wait_for_timeout(4000)
             login_snippet = re.sub(r"\s+", " ", page.inner_text("body"))[:300]
             print(
