@@ -147,56 +147,57 @@ def fetch_via_login_and_click(
                 pass
             page.wait_for_timeout(2000)
 
-            app_frame = None
-            for frame in page.frames:
-                url = frame.url or ""
-                if "eu-ng1.dlubal.com" in url or "default.aspx" in url:
-                    app_frame = frame
-                    break
+            page.wait_for_timeout(4000)
 
-            if app_frame is not None:
-                print(
-                    f"[Diagnose] {label}: App-iframe gefunden: "
-                    f"{app_frame.url!r}",
-                    file=sys.stderr,
+            # page.frames already includes every frame in the page,
+            # however deeply nested - list all of them with a length
+            # check so we can see where content actually ended up.
+            frame_summary = []
+            for frame in page.frames:
+                try:
+                    flen = len(frame.inner_text("body"))
+                except Exception:
+                    flen = -1
+                frame_summary.append(f"{frame.url or '(no url)'} [{flen} Zeichen]")
+            sys.stderr.write(
+                f"[Diagnose] {label}: {len(page.frames)} Frame(s) total:\n"
+            )
+            for line in frame_summary:
+                sys.stderr.write(f"  {line}\n")
+            sys.stderr.flush()
+
+            # Find whichever frame actually contains our first click
+            # target, rather than assuming it's the outer app iframe.
+            target_frame = None
+            for frame in page.frames:
+                try:
+                    if frame.get_by_text(
+                        click_path[0], exact=False
+                    ).count() > 0:
+                        target_frame = frame
+                        break
+                except Exception:
+                    continue
+
+            if target_frame is None:
+                sys.stderr.write(
+                    f"[Diagnose] {label}: Text {click_path[0]!r} in "
+                    f"KEINEM Frame gefunden.\n"
                 )
+                sys.stderr.flush()
+                text = page.inner_text("body")
+            else:
+                sys.stderr.write(
+                    f"[Diagnose] {label}: Text {click_path[0]!r} gefunden "
+                    f"in Frame {target_frame.url!r}\n"
+                )
+                sys.stderr.flush()
                 for step_text in click_path:
-                    app_frame.get_by_text(
+                    target_frame.get_by_text(
                         step_text, exact=False
                     ).first.click(timeout=15000)
                     page.wait_for_timeout(2500)
-                text = app_frame.inner_text("body")
-            else:
-                print(
-                    f"[Diagnose] {label}: kein App-iframe gefunden, "
-                    f"weiche auf Klicks in der Hauptseite aus.",
-                    file=sys.stderr,
-                )
-                for step_text in click_path:
-                    page.get_by_text(step_text, exact=False).first.click(
-                        timeout=15000
-                    )
-                    page.wait_for_timeout(2500)
-
-                frame_info = []
-                best_frame_text = ""
-                for frame in page.frames:
-                    try:
-                        frame_text = frame.inner_text("body")
-                    except Exception:
-                        frame_text = ""
-                    frame_info.append(
-                        f"{frame.url or '(no url)'} -> "
-                        f"{len(frame_text)} Zeichen"
-                    )
-                    if len(frame_text) > len(best_frame_text):
-                        best_frame_text = frame_text
-                print(
-                    f"[Diagnose] {label}: {len(page.frames)} Frame(s) "
-                    f"nach Klick-Navigation:\n  " + "\n  ".join(frame_info),
-                    file=sys.stderr,
-                )
-                text = best_frame_text
+                text = target_frame.inner_text("body")
         finally:
             browser.close()
         return text
