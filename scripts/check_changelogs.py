@@ -57,6 +57,71 @@ def fetch(url):
     return r.text
 
 
+def fetch_via_login_and_click(
+    login_url, base_url, click_path, email, password, label="Login-Quelle"
+):
+    """Like fetch_via_login, but after logging in it clicks through a
+    sequence of menu texts (real UI navigation) instead of jumping
+    straight to a URL - needed for single-page apps that only load their
+    content on genuine in-app navigation."""
+    from playwright.sync_api import sync_playwright
+
+    with sync_playwright() as p:
+        browser = p.chromium.launch()
+        page = browser.new_page(user_agent=HEADERS["User-Agent"])
+        try:
+            page.goto(login_url, wait_until="load", timeout=30000)
+            page.fill(
+                'input[type="email"]:visible, '
+                'input[name*="login" i]:visible, '
+                'input[name*="mail" i]:visible, '
+                'input[name*="user" i]:visible',
+                email,
+            )
+            page.fill('input[type="password"]:visible', password)
+            page.click(
+                'button:has-text("Login"):visible, '
+                'input[type="submit"]:visible, '
+                'button[type="submit"]:visible'
+            )
+            page.wait_for_timeout(4000)
+            if page.locator('input[type="password"]:visible').count() > 0:
+                raise RuntimeError(
+                    "Login scheint fehlgeschlagen zu sein - nach dem Klick "
+                    "ist weiterhin ein Passwortfeld sichtbar."
+                )
+
+            page.goto(base_url, wait_until="load", timeout=30000)
+            page.wait_for_timeout(3000)
+            for step_text in click_path:
+                page.get_by_text(step_text, exact=True).first.click(
+                    timeout=10000
+                )
+                page.wait_for_timeout(2500)
+
+            frame_info = []
+            best_frame_text = ""
+            for frame in page.frames:
+                try:
+                    frame_text = frame.inner_text("body")
+                except Exception:
+                    frame_text = ""
+                frame_info.append(
+                    f"{frame.url or '(no url)'} -> {len(frame_text)} Zeichen"
+                )
+                if len(frame_text) > len(best_frame_text):
+                    best_frame_text = frame_text
+            print(
+                f"[Diagnose] {label}: {len(page.frames)} Frame(s) "
+                f"nach Klick-Navigation:\n  " + "\n  ".join(frame_info),
+                file=sys.stderr,
+            )
+            text = best_frame_text
+        finally:
+            browser.close()
+        return text
+
+
 def fetch_via_login(login_url, target_url, email, password, label="Login-Quelle"):
     """Logs into a portal with a real (headless) browser and returns the
     visible text of the target page. Used for sources that require the
@@ -235,8 +300,9 @@ def main():
                         f"fehlen oder sind leer"
                     )
                     continue
-                page_text = fetch_via_login(
-                    source["login_url"], source["target_url"], user, pw,
+                page_text = fetch_via_login_and_click(
+                    source["login_url"], source["base_url"],
+                    source["click_path"], user, pw,
                     label=source["name"],
                 )
                 marker = hashlib.sha256(
@@ -262,7 +328,7 @@ def main():
                         "name": source["name"],
                         "old": old,
                         "new": marker,
-                        "url": source["target_url"],
+                        "url": source["base_url"],
                         "excerpt": re.sub(r"\s+", " ", page_text)[:6000],
                     })
                     state[sid] = marker

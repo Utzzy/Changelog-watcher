@@ -54,8 +54,9 @@
     "name": "Dlubal Extranet Release Notes (Login)",
     "method": "dlubal_extranet",
     "login_url": "https://www.dlubal.com/en/extranet/login",
-    "target_url": "https://www.dlubal.com/en/extranet?viewpage=126",
-    "notes": "Uses the user's own Dlubal account (DLUBAL_USER/DLUBAL_PASS secrets) via a real headless browser (Playwright) to log in and read the actual detailed release notes page, which is not publicly accessible. Change detection is currently a full-page content hash (viewpage=126 structure is unknown ahead of time) - may need refinement after the first real run if it proves noisy (e.g. picking up unrelated dynamic page content)."
+    "base_url": "https://www.dlubal.com/en/extranet",
+    "click_path": ["Development", "Implemented Features"],
+    "notes": "Uses the user's own Dlubal account (DLUBAL_USER/DLUBAL_PASS secrets) via a real headless browser (Playwright) to log in and read the 'Implemented Features' table, which is not publicly accessible. Jumping straight to the viewpage=126 URL did not work (the single-page app didn't load real content on a direct external navigation) - clicks through the real menus instead: Development -> Implemented Features."
   }
 ]
 
