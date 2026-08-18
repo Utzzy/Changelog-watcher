@@ -58,12 +58,13 @@ def fetch(url):
 
 
 def fetch_via_login_and_click(
-    login_url, base_url, target_viewpage, email, password, label="Login-Quelle"
+    login_url, base_url, target_viewpage, email, password
 ):
-    """Like fetch_via_login, but after logging in it clicks through a
-    sequence of menu texts (real UI navigation) instead of jumping
-    straight to a URL - needed for single-page apps that only load their
-    content on genuine in-app navigation."""
+    """Logs into the Dlubal Extranet and reads the 'Implemented Features'
+    table. The app's real content lives in a nested content frame
+    (eu-ng1.dlubal.com/.../ViewPage.aspx?viewpage=N) rather than the outer
+    page, so once logged in we find that frame and redirect it straight to
+    the target viewpage via JS instead of clicking through menus."""
     from playwright.sync_api import sync_playwright
 
     with sync_playwright() as p:
@@ -86,57 +87,21 @@ def fetch_via_login_and_click(
             if login_button.count() > 0:
                 login_button.first.click(timeout=15000)
             else:
-                # Diagnostic: list every visible button/submit-like element
-                # so we can see what's actually clickable on this form.
-                candidates = page.locator(
-                    'button:visible, input[type="submit"]:visible, '
-                    '[role="button"]:visible'
-                )
-                found = []
-                for i in range(min(candidates.count(), 15)):
-                    try:
-                        found.append(candidates.nth(i).inner_text()[:40])
-                    except Exception:
-                        found.append("(kein Text)")
-                print(
-                    f"[Diagnose] {label}: kein <button>'Login' gefunden. "
-                    f"Sichtbare Buttons: {found}",
-                    file=sys.stderr,
-                )
-                # Fallback: Enter key in the password field.
+                # Fallback if the button ever changes: Enter key submit.
                 page.press('input[type="password"]:visible', "Enter")
 
             page.wait_for_timeout(4000)
-            login_snippet = re.sub(r"\s+", " ", page.inner_text("body"))[:300]
-            print(
-                f"[Diagnose] {label}: nach Login-Versuch auf "
-                f"{page.url!r}. Anfang: {login_snippet!r}",
-                file=sys.stderr,
-            )
             if page.locator('input[type="password"]:visible').count() > 0:
                 raise RuntimeError(
-                    "Login scheint fehlgeschlagen zu sein - nach dem Klick "
-                    "ist weiterhin ein Passwortfeld sichtbar."
+                    "Login scheint fehlgeschlagen zu sein - nach dem "
+                    "Login-Versuch ist weiterhin ein Passwortfeld sichtbar."
                 )
 
             page.goto(base_url, wait_until="load", timeout=30000)
             page.wait_for_timeout(3000)
 
-            # Diagnostic: confirm what page we actually landed on before
-            # trying to click anything, so a failure here tells us whether
-            # we're really logged in rather than bounced back somewhere.
-            pre_click_snippet = re.sub(r"\s+", " ", page.inner_text("body"))[:300]
-            print(
-                f"[Diagnose] {label}: vor Klick-Navigation auf "
-                f"{page.url!r}. Anfang: {pre_click_snippet!r}",
-                file=sys.stderr,
-            )
-
-            # The actual account application runs inside an embedded
-            # iframe on a separate subdomain (eu-ng1.dlubal.com) rather
-            # than directly on the outer page - that iframe was even
-            # blocking our earlier clicks on the outer page. Target it
-            # directly instead.
+            # Wait for the embedded app iframe (a separate subdomain,
+            # eu-ng1.dlubal.com) to appear, then find its content frame.
             try:
                 page.wait_for_selector(
                     'iframe[src*="eu-ng1.dlubal.com"], '
@@ -145,32 +110,8 @@ def fetch_via_login_and_click(
                 )
             except Exception:
                 pass
-            page.wait_for_timeout(2000)
-
             page.wait_for_timeout(4000)
 
-            # page.frames already includes every frame in the page,
-            # however deeply nested - list all of them with a length
-            # check so we can see where content actually ended up.
-            frame_summary = []
-            for frame in page.frames:
-                try:
-                    flen = len(frame.inner_text("body"))
-                except Exception:
-                    flen = -1
-                frame_summary.append(f"{frame.url or '(no url)'} [{flen} Zeichen]")
-            sys.stderr.write(
-                f"[Diagnose] {label}: {len(page.frames)} Frame(s) total:\n"
-            )
-            for line in frame_summary:
-                sys.stderr.write(f"  {line}\n")
-            sys.stderr.flush()
-
-            # The app's actual content lives in a dedicated content frame
-            # (ViewPage.aspx?viewpage=N) rather than needing menu clicks.
-            # Find that frame and simply redirect it to our target
-            # viewpage directly - far more robust than clicking through
-            # menus in a legacy multi-frame app.
             content_frame = None
             for frame in page.frames:
                 if "ViewPage.aspx" in (frame.url or ""):
@@ -178,11 +119,6 @@ def fetch_via_login_and_click(
                     break
 
             if content_frame is None:
-                sys.stderr.write(
-                    f"[Diagnose] {label}: kein ViewPage.aspx-Frame "
-                    f"gefunden.\n"
-                )
-                sys.stderr.flush()
                 text = page.inner_text("body")
             else:
                 new_url = re.sub(
@@ -190,95 +126,16 @@ def fetch_via_login_and_click(
                     f"viewpage={target_viewpage}",
                     content_frame.url,
                 )
-                sys.stderr.write(
-                    f"[Diagnose] {label}: Content-Frame gefunden "
-                    f"({content_frame.url!r}), leite um auf {new_url!r}\n"
-                )
-                sys.stderr.flush()
                 content_frame.evaluate(
                     "url => { window.location.href = url; }", new_url
                 )
                 page.wait_for_timeout(4000)
-                # Re-resolve the frame after navigation - Playwright keeps
-                # the same Frame object across same-frame navigations, but
-                # we look it up fresh to be safe.
                 refreshed = None
                 for frame in page.frames:
                     if "ViewPage.aspx" in (frame.url or ""):
                         refreshed = frame
                         break
                 text = (refreshed or content_frame).inner_text("body")
-        finally:
-            browser.close()
-        return text
-
-
-def fetch_via_login(login_url, target_url, email, password, label="Login-Quelle"):
-    """Logs into a portal with a real (headless) browser and returns the
-    visible text of the target page. Used for sources that require the
-    user's own account, since a plain HTTP request can't handle a login
-    form/session the way a browser does."""
-    from playwright.sync_api import sync_playwright
-
-    with sync_playwright() as p:
-        browser = p.chromium.launch()
-        page = browser.new_page(user_agent=HEADERS["User-Agent"])
-        try:
-            page.goto(login_url, wait_until="networkidle", timeout=30000)
-            # Standard HTML5 input types - robust even without knowing the
-            # exact form markup. ':visible' filters out hidden duplicate
-            # fields some sites include (e.g. for other locales or
-            # autofill tricks) that otherwise get matched first.
-            page.fill(
-                'input[type="email"]:visible, '
-                'input[name*="login" i]:visible, '
-                'input[name*="mail" i]:visible, '
-                'input[name*="user" i]:visible',
-                email,
-            )
-            page.fill('input[type="password"]:visible', password)
-            page.click(
-                'button:has-text("Login"):visible, '
-                'input[type="submit"]:visible, '
-                'button[type="submit"]:visible'
-            )
-            page.wait_for_load_state("networkidle", timeout=30000)
-
-            # Sanity check: if a password field is still visible, the login
-            # almost certainly failed (wrong credentials, or the click
-            # didn't submit) rather than actually landing in the account.
-            if page.locator('input[type="password"]:visible').count() > 0:
-                raise RuntimeError(
-                    "Login scheint fehlgeschlagen zu sein - nach dem Klick "
-                    "ist weiterhin ein Passwortfeld sichtbar (falsche "
-                    "Zugangsdaten oder unerwarteter Seitenaufbau?)"
-                )
-
-            page.goto(target_url, wait_until="load", timeout=30000)
-            # This page's content (a feature/changes table) loads via
-            # JS/AJAX after the initial page load, possibly in a nested
-            # frame. Give it time, then inspect every frame to find
-            # wherever the actual content ended up.
-            page.wait_for_timeout(6000)
-
-            frame_info = []
-            best_frame_text = ""
-            for frame in page.frames:
-                try:
-                    frame_text = frame.inner_text("body")
-                except Exception:
-                    frame_text = ""
-                frame_info.append(
-                    f"{frame.url or '(no url)'} -> {len(frame_text)} Zeichen"
-                )
-                if len(frame_text) > len(best_frame_text):
-                    best_frame_text = frame_text
-            print(
-                f"[Diagnose] {label}: {len(page.frames)} Frame(s) "
-                f"gefunden:\n  " + "\n  ".join(frame_info),
-                file=sys.stderr,
-            )
-            text = best_frame_text
         finally:
             browser.close()
         return text
@@ -394,23 +251,10 @@ def main():
                 page_text = fetch_via_login_and_click(
                     source["login_url"], source["base_url"],
                     source["target_viewpage"], user, pw,
-                    label=source["name"],
                 )
                 marker = hashlib.sha256(
                     page_text.encode("utf-8")
                 ).hexdigest()[:16]
-
-                # Diagnostic: always log a snippet of what was actually
-                # captured, so we can verify we're reading the right
-                # content even when no change is detected (this source is
-                # still being tuned).
-                snippet = re.sub(r"\s+", " ", page_text)[:500]
-                print(
-                    f"[Diagnose] {source['name']}: Marker={marker} "
-                    f"Textlänge={len(page_text)} Zeichen. "
-                    f"Anfang: {snippet!r}",
-                    file=sys.stderr,
-                )
 
                 old = state.get(sid)
                 if old != marker:
