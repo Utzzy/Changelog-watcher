@@ -98,7 +98,7 @@ def fetch_via_login(login_url, target_url, email, password, label="Login-Quelle"
                     "Zugangsdaten oder unerwarteter Seitenaufbau?)"
                 )
 
-            page.goto(target_url, wait_until="networkidle", timeout=30000)
+            page.goto(target_url, wait_until="load", timeout=30000)
             # This page's content (a feature/changes table) loads via
             # JS/AJAX after the initial page load, possibly in a nested
             # frame. Give it time, then inspect every frame to find
