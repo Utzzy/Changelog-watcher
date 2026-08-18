@@ -132,30 +132,71 @@ def fetch_via_login_and_click(
                 file=sys.stderr,
             )
 
-            for step_text in click_path:
-                page.get_by_text(step_text, exact=False).first.click(
-                    timeout=15000
+            # The actual account application runs inside an embedded
+            # iframe on a separate subdomain (eu-ng1.dlubal.com) rather
+            # than directly on the outer page - that iframe was even
+            # blocking our earlier clicks on the outer page. Target it
+            # directly instead.
+            try:
+                page.wait_for_selector(
+                    'iframe[src*="eu-ng1.dlubal.com"], '
+                    'iframe[src*="default.aspx"]',
+                    timeout=15000,
                 )
-                page.wait_for_timeout(2500)
+            except Exception:
+                pass
+            page.wait_for_timeout(2000)
 
-            frame_info = []
-            best_frame_text = ""
+            app_frame = None
             for frame in page.frames:
-                try:
-                    frame_text = frame.inner_text("body")
-                except Exception:
-                    frame_text = ""
-                frame_info.append(
-                    f"{frame.url or '(no url)'} -> {len(frame_text)} Zeichen"
+                url = frame.url or ""
+                if "eu-ng1.dlubal.com" in url or "default.aspx" in url:
+                    app_frame = frame
+                    break
+
+            if app_frame is not None:
+                print(
+                    f"[Diagnose] {label}: App-iframe gefunden: "
+                    f"{app_frame.url!r}",
+                    file=sys.stderr,
                 )
-                if len(frame_text) > len(best_frame_text):
-                    best_frame_text = frame_text
-            print(
-                f"[Diagnose] {label}: {len(page.frames)} Frame(s) "
-                f"nach Klick-Navigation:\n  " + "\n  ".join(frame_info),
-                file=sys.stderr,
-            )
-            text = best_frame_text
+                for step_text in click_path:
+                    app_frame.get_by_text(
+                        step_text, exact=False
+                    ).first.click(timeout=15000)
+                    page.wait_for_timeout(2500)
+                text = app_frame.inner_text("body")
+            else:
+                print(
+                    f"[Diagnose] {label}: kein App-iframe gefunden, "
+                    f"weiche auf Klicks in der Hauptseite aus.",
+                    file=sys.stderr,
+                )
+                for step_text in click_path:
+                    page.get_by_text(step_text, exact=False).first.click(
+                        timeout=15000
+                    )
+                    page.wait_for_timeout(2500)
+
+                frame_info = []
+                best_frame_text = ""
+                for frame in page.frames:
+                    try:
+                        frame_text = frame.inner_text("body")
+                    except Exception:
+                        frame_text = ""
+                    frame_info.append(
+                        f"{frame.url or '(no url)'} -> "
+                        f"{len(frame_text)} Zeichen"
+                    )
+                    if len(frame_text) > len(best_frame_text):
+                        best_frame_text = frame_text
+                print(
+                    f"[Diagnose] {label}: {len(page.frames)} Frame(s) "
+                    f"nach Klick-Navigation:\n  " + "\n  ".join(frame_info),
+                    file=sys.stderr,
+                )
+                text = best_frame_text
         finally:
             browser.close()
         return text
