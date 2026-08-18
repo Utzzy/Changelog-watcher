@@ -57,7 +57,7 @@ def fetch(url):
     return r.text
 
 
-def fetch_via_login(login_url, target_url, email, password):
+def fetch_via_login(login_url, target_url, email, password, label="Login-Quelle"):
     """Logs into a portal with a real (headless) browser and returns the
     visible text of the target page. Used for sources that require the
     user's own account, since a plain HTTP request can't handle a login
@@ -118,7 +118,7 @@ def fetch_via_login(login_url, target_url, email, password):
                 if len(frame_text) > len(best_frame_text):
                     best_frame_text = frame_text
             print(
-                f"[Diagnose] {source['name']}: {len(page.frames)} Frame(s) "
+                f"[Diagnose] {label}: {len(page.frames)} Frame(s) "
                 f"gefunden:\n  " + "\n  ".join(frame_info),
                 file=sys.stderr,
             )
@@ -236,7 +236,8 @@ def main():
                     )
                     continue
                 page_text = fetch_via_login(
-                    source["login_url"], source["target_url"], user, pw
+                    source["login_url"], source["target_url"], user, pw,
+                    label=source["name"],
                 )
                 marker = hashlib.sha256(
                     page_text.encode("utf-8")
