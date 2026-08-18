@@ -55,8 +55,8 @@
     "method": "dlubal_extranet",
     "login_url": "https://www.dlubal.com/en/extranet/login",
     "base_url": "https://www.dlubal.com/en/extranet",
-    "click_path": ["Development", "Implemented Features"],
-    "notes": "Uses the user's own Dlubal account (DLUBAL_USER/DLUBAL_PASS secrets) via a real headless browser (Playwright) to log in and read the 'Implemented Features' table, which is not publicly accessible. Jumping straight to the viewpage=126 URL did not work (the single-page app didn't load real content on a direct external navigation) - clicks through the real menus instead: Development -> Implemented Features."
+    "target_viewpage": "126",
+    "notes": "Uses the user's own Dlubal account (DLUBAL_USER/DLUBAL_PASS secrets) via a real headless browser (Playwright) to log in and read the 'Implemented Features' table, which is not publicly accessible. The app's real content lives in a nested content frame (eu-ng1.dlubal.com/.../ViewPage.aspx?viewpage=N) rather than the outer page - the script finds that frame and redirects it directly to viewpage=126 via JS rather than clicking through menus."
   }
 ]
 

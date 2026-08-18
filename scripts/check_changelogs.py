@@ -58,7 +58,7 @@ def fetch(url):
 
 
 def fetch_via_login_and_click(
-    login_url, base_url, click_path, email, password, label="Login-Quelle"
+    login_url, base_url, target_viewpage, email, password, label="Login-Quelle"
 ):
     """Like fetch_via_login, but after logging in it clicks through a
     sequence of menu texts (real UI navigation) instead of jumping
@@ -166,38 +166,48 @@ def fetch_via_login_and_click(
                 sys.stderr.write(f"  {line}\n")
             sys.stderr.flush()
 
-            # Find whichever frame actually contains our first click
-            # target, rather than assuming it's the outer app iframe.
-            target_frame = None
+            # The app's actual content lives in a dedicated content frame
+            # (ViewPage.aspx?viewpage=N) rather than needing menu clicks.
+            # Find that frame and simply redirect it to our target
+            # viewpage directly - far more robust than clicking through
+            # menus in a legacy multi-frame app.
+            content_frame = None
             for frame in page.frames:
-                try:
-                    if frame.get_by_text(
-                        click_path[0], exact=False
-                    ).count() > 0:
-                        target_frame = frame
-                        break
-                except Exception:
-                    continue
+                if "ViewPage.aspx" in (frame.url or ""):
+                    content_frame = frame
+                    break
 
-            if target_frame is None:
+            if content_frame is None:
                 sys.stderr.write(
-                    f"[Diagnose] {label}: Text {click_path[0]!r} in "
-                    f"KEINEM Frame gefunden.\n"
+                    f"[Diagnose] {label}: kein ViewPage.aspx-Frame "
+                    f"gefunden.\n"
                 )
                 sys.stderr.flush()
                 text = page.inner_text("body")
             else:
+                new_url = re.sub(
+                    r"viewpage=\d+",
+                    f"viewpage={target_viewpage}",
+                    content_frame.url,
+                )
                 sys.stderr.write(
-                    f"[Diagnose] {label}: Text {click_path[0]!r} gefunden "
-                    f"in Frame {target_frame.url!r}\n"
+                    f"[Diagnose] {label}: Content-Frame gefunden "
+                    f"({content_frame.url!r}), leite um auf {new_url!r}\n"
                 )
                 sys.stderr.flush()
-                for step_text in click_path:
-                    target_frame.get_by_text(
-                        step_text, exact=False
-                    ).first.click(timeout=15000)
-                    page.wait_for_timeout(2500)
-                text = target_frame.inner_text("body")
+                content_frame.evaluate(
+                    "url => { window.location.href = url; }", new_url
+                )
+                page.wait_for_timeout(4000)
+                # Re-resolve the frame after navigation - Playwright keeps
+                # the same Frame object across same-frame navigations, but
+                # we look it up fresh to be safe.
+                refreshed = None
+                for frame in page.frames:
+                    if "ViewPage.aspx" in (frame.url or ""):
+                        refreshed = frame
+                        break
+                text = (refreshed or content_frame).inner_text("body")
         finally:
             browser.close()
         return text
@@ -383,7 +393,7 @@ def main():
                     continue
                 page_text = fetch_via_login_and_click(
                     source["login_url"], source["base_url"],
-                    source["click_path"], user, pw,
+                    source["target_viewpage"], user, pw,
                     label=source["name"],
                 )
                 marker = hashlib.sha256(
