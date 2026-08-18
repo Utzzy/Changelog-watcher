@@ -3,7 +3,7 @@ name: Changelog Watch
 on:
   schedule:
     # every 6 hours - adjust to taste (cron is UTC)
-    - cron: "0 6 * * 1-5"
+    - cron: "0 */6 * * *"
   workflow_dispatch: {}   # lets you trigger a manual test run from the Actions tab
 
 permissions:
@@ -32,6 +32,9 @@ jobs:
       - name: Install Python dependencies
         run: pip install -r requirements.txt
 
+      - name: Install Playwright Chromium
+        run: python -m playwright install --with-deps chromium
+
       - name: Run changelog check
         env:
           COPILOT_GITHUB_TOKEN: ${{ secrets.COPILOT_PAT }}
@@ -41,6 +44,8 @@ jobs:
           SMTP_PASS: ${{ secrets.SMTP_PASS }}
           MAIL_FROM: ${{ secrets.MAIL_FROM }}
           MAIL_TO: ${{ secrets.MAIL_TO }}
+          DLUBAL_USER: ${{ secrets.DLUBAL_USER }}
+          DLUBAL_PASS: ${{ secrets.DLUBAL_PASS }}
         run: python scripts/check_changelogs.py
 
       - name: Commit updated state
