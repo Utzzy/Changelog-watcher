@@ -87,8 +87,32 @@ def fetch_via_login(login_url, target_url, email, password):
                 'button[type="submit"]:visible'
             )
             page.wait_for_load_state("networkidle", timeout=30000)
+
+            # Sanity check: if a password field is still visible, the login
+            # almost certainly failed (wrong credentials, or the click
+            # didn't submit) rather than actually landing in the account.
+            if page.locator('input[type="password"]:visible').count() > 0:
+                raise RuntimeError(
+                    "Login scheint fehlgeschlagen zu sein - nach dem Klick "
+                    "ist weiterhin ein Passwortfeld sichtbar (falsche "
+                    "Zugangsdaten oder unerwarteter Seitenaufbau?)"
+                )
+
             page.goto(target_url, wait_until="networkidle", timeout=30000)
-            text = page.inner_text("body")
+            # Capture the main page text AND any iframes, since some
+            # older portals embed the actual content in an iframe rather
+            # than rendering it directly in the page.
+            parts = [page.inner_text("body")]
+            for frame in page.frames:
+                if frame == page.main_frame:
+                    continue
+                try:
+                    frame_text = frame.inner_text("body")
+                    if frame_text.strip():
+                        parts.append(frame_text)
+                except Exception:
+                    pass
+            text = "\n\n".join(parts)
         finally:
             browser.close()
         return text
