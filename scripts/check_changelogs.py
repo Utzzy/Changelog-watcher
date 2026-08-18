@@ -57,6 +57,35 @@ def fetch(url):
     return r.text
 
 
+def fetch_via_login(login_url, target_url, email, password):
+    """Logs into a portal with a real (headless) browser and returns the
+    visible text of the target page. Used for sources that require the
+    user's own account, since a plain HTTP request can't handle a login
+    form/session the way a browser does."""
+    from playwright.sync_api import sync_playwright
+
+    with sync_playwright() as p:
+        browser = p.chromium.launch()
+        page = browser.new_page(user_agent=HEADERS["User-Agent"])
+        try:
+            page.goto(login_url, wait_until="networkidle", timeout=30000)
+            # Standard HTML5 input types - robust even without knowing the
+            # exact form markup, since email/password fields almost always
+            # use these types.
+            page.fill('input[type="email"], input[name*="mail" i]', email)
+            page.fill('input[type="password"]', password)
+            page.click(
+                'button:has-text("Login"), input[type="submit"], '
+                'button[type="submit"]'
+            )
+            page.wait_for_load_state("networkidle", timeout=30000)
+            page.goto(target_url, wait_until="networkidle", timeout=30000)
+            text = page.inner_text("body")
+        finally:
+            browser.close()
+        return text
+
+
 def strip_html(html):
     text = re.sub(r"<script.*?</script>", " ", html, flags=re.S | re.I)
     text = re.sub(r"<style.*?</style>", " ", text, flags=re.S | re.I)
@@ -155,6 +184,34 @@ def main():
     for source in sources:
         sid = source["id"]
         try:
+            if source["method"] == "dlubal_extranet":
+                user = os.environ.get("DLUBAL_USER")
+                pw = os.environ.get("DLUBAL_PASS")
+                if not user or not pw:
+                    errors.append(
+                        f"{source['name']}: DLUBAL_USER/DLUBAL_PASS Secrets "
+                        f"fehlen oder sind leer"
+                    )
+                    continue
+                page_text = fetch_via_login(
+                    source["login_url"], source["target_url"], user, pw
+                )
+                marker = hashlib.sha256(
+                    page_text.encode("utf-8")
+                ).hexdigest()[:16]
+                old = state.get(sid)
+                if old != marker:
+                    changed.append({
+                        "id": sid,
+                        "name": source["name"],
+                        "old": old,
+                        "new": marker,
+                        "url": source["target_url"],
+                        "excerpt": re.sub(r"\s+", " ", page_text)[:6000],
+                    })
+                    state[sid] = marker
+                continue
+
             if source["method"] == "listing":
                 # Overview page only lists titles/links, not the actual change
                 # text. Find the newest matching entry, then fetch that

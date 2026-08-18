@@ -1,6 +1,6 @@
 # Changelog Watcher (cadwork, Allplan, Rhino, Dlubal RFEM/RSTAB)
 
-Prüft Montags bis Freitags jeweils um 8 Uhr per GitHub Actions, ob es bei den konfigurierten
+Prüft alle 6 Stunden per GitHub Actions, ob es bei den konfigurierten
 Programmen eine neue Version/einen neuen Release-Post gibt. Bei einer
 Änderung lässt das Skript **GitHub Copilot CLI** eine kurze deutsche
 Zusammenfassung schreiben und verschickt sie per Mail. Ohne Änderung
@@ -53,7 +53,25 @@ Im Repo: **Settings → Secrets and variables → Actions → New repository sec
 | `SMTP_USER`     | `deinname@gmail.com`              |
 | `SMTP_PASS`     | das App-Passwort aus Schritt 3    |
 | `MAIL_FROM`     | `deinname@gmail.com`              |
-| `MAIL_TO`       | die Adresse, an die die Zusammenfassung gehen soll |
+| `MAIL_TO`       | die Adresse(n), an die die Zusammenfassung gehen soll |
+| `DLUBAL_USER`   | deine E-Mail-Adresse für den Dlubal-Account (Extranet) |
+| `DLUBAL_PASS`   | dein Dlubal-Account-Passwort          |
+
+**Wichtig zu `DLUBAL_USER`/`DLUBAL_PASS`:** Das sind deine echten
+Zugangsdaten für dein Dlubal-Konto, damit das Skript sich per Browser
+automatisch einloggen und die (sonst login-geschützten) detaillierten
+Release Notes lesen kann. GitHub Secrets sind verschlüsselt gespeichert
+und werden in den Actions-Logs automatisch zensiert (als `***`
+angezeigt) — trotzdem gilt: Nur Konten verwenden, bei denen du mit dieser
+Art von automatisiertem Zugriff einverstanden bist, und **kein Konto mit
+aktiver Zwei-Faktor-Authentifizierung**, da der automatisierte Login sonst
+nicht funktioniert.
+
+**Mehrere Empfänger:** Trag bei `MAIL_TO` einfach mehrere Adressen durch
+Komma getrennt ein, z. B. `person1@example.com, person2@example.com`.
+Kein zusätzliches Secret nötig — einfach das bestehende `MAIL_TO`
+bearbeiten (Settings → Secrets and variables → Actions → `MAIL_TO` →
+Update).
 
 ## 5. Quellen prüfen/anpassen
 
@@ -92,10 +110,22 @@ hier eingerichtete Quelle erkennt deshalb nur neue **Jahres-Hauptversionen**
    einzelne Quelle im Hintergrund gescheitert sein (das Skript überspringt
    fehlerhafte Quellen, statt den ganzen Lauf abzubrechen). Prüfe nach
    jedem Testlauf kurz `state/versions.json` im Code-Tab — dort sollte für
-   jede der 4 Quellen (cadwork, allplan, rhino, dlubal) ein Eintrag stehen.
-   Fehlt einer, öffne den Lauf unter Actions → Job → Schritt
-   "Run changelog check" und schau in den Log-Zeilen nach "Hinweise" bzw.
-   Fehlermeldungen.
+   jede der 7 Quellen (cadwork, allplan_2026, allplan_2025, rhino, dlubal,
+   dlubal_whats_new, dlubal_extranet) ein Eintrag stehen. Fehlt einer,
+   öffne den Lauf unter Actions → Job → Schritt "Run changelog check" und
+   schau in den Log-Zeilen nach "Hinweise" bzw. Fehlermeldungen.
+
+**Dlubal läuft bewusst über zwei Quellen:** `dlubal` meldet sehr zeitnah
+"ein neues Build ist da", enthält aber kaum Inhalt (die echten Release
+Notes liegen bei Dlubal hinter einem Login). `dlubal_whats_new` kommt nur
+etwa einmal im Monat, dafür mit benannten, echten Features statt nur
+"Bugfixes verfügbar".
+
+**Allplan wird bewusst in zwei Quellen aufgeteilt** (`allplan_2026` und
+`allplan_2025`): Allplan bringt für beide Versions-Zweige parallel weiter
+Hotfixes heraus (z. B. `2025-1-10`, obwohl `2026` schon länger draußen
+ist), deshalb werden beide unabhängig voneinander überwacht statt nur der
+insgesamt neueste Eintrag.
 
 ## 7. Zeitplan anpassen
 

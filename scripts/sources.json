@@ -48,6 +48,14 @@
     "tag_url": "https://community.dlubal.com/tag/dlubal-what-is-new/626",
     "base_url": "https://community.dlubal.com",
     "notes": "Dlubal's monthly 'What's New' round-up posts. Roughly once a month instead of every build, but contains actual named features (e.g. 'Modal analysis values by FE node', 'Wind flows using point clouds') instead of a generic 'bugfixes available' announcement - this is the most detailed public content Dlubal publishes."
+  },
+  {
+    "id": "dlubal_extranet",
+    "name": "Dlubal Extranet Release Notes (Login)",
+    "method": "dlubal_extranet",
+    "login_url": "https://www.dlubal.com/en/extranet/login",
+    "target_url": "https://www.dlubal.com/en/extranet?viewpage=126",
+    "notes": "Uses the user's own Dlubal account (DLUBAL_USER/DLUBAL_PASS secrets) via a real headless browser (Playwright) to log in and read the actual detailed release notes page, which is not publicly accessible. Change detection is currently a full-page content hash (viewpage=126 structure is unknown ahead of time) - may need refinement after the first real run if it proves noisy (e.g. picking up unrelated dynamic page content)."
   }
 ]
 
