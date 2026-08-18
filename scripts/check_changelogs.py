@@ -85,6 +85,12 @@ def fetch_via_login_and_click(
                 'button[type="submit"]:visible'
             )
             page.wait_for_timeout(4000)
+            login_snippet = re.sub(r"\s+", " ", page.inner_text("body"))[:300]
+            print(
+                f"[Diagnose] {label}: nach Login-Versuch auf "
+                f"{page.url!r}. Anfang: {login_snippet!r}",
+                file=sys.stderr,
+            )
             if page.locator('input[type="password"]:visible').count() > 0:
                 raise RuntimeError(
                     "Login scheint fehlgeschlagen zu sein - nach dem Klick "
