@@ -100,38 +100,29 @@ def fetch_via_login(login_url, target_url, email, password):
 
             page.goto(target_url, wait_until="networkidle", timeout=30000)
             # This page's content (a feature/changes table) loads via
-            # JS/AJAX after the initial page load, and may live inside a
-            # nested frame. Give it time and actively look for it instead
-            # of grabbing whatever text exists immediately.
-            page.wait_for_timeout(4000)
-            text = None
+            # JS/AJAX after the initial page load, possibly in a nested
+            # frame. Give it time, then inspect every frame to find
+            # wherever the actual content ended up.
+            page.wait_for_timeout(6000)
+
+            frame_info = []
+            best_frame_text = ""
             for frame in page.frames:
                 try:
-                    if frame.get_by_text(
-                        "Implemented Features", exact=False
-                    ).count() > 0:
-                        frame.wait_for_selector(
-                            "text=Implemented Features", timeout=15000
-                        )
-                        text = frame.inner_text("body")
-                        break
+                    frame_text = frame.inner_text("body")
                 except Exception:
-                    continue
-            if text is None:
-                # Fallback: couldn't find the expected table anywhere -
-                # capture main page + all frames like before, so we at
-                # least get *something* to inspect/debug from.
-                parts = [page.inner_text("body")]
-                for frame in page.frames:
-                    if frame == page.main_frame:
-                        continue
-                    try:
-                        frame_text = frame.inner_text("body")
-                        if frame_text.strip():
-                            parts.append(frame_text)
-                    except Exception:
-                        pass
-                text = "\n\n".join(parts)
+                    frame_text = ""
+                frame_info.append(
+                    f"{frame.url or '(no url)'} -> {len(frame_text)} Zeichen"
+                )
+                if len(frame_text) > len(best_frame_text):
+                    best_frame_text = frame_text
+            print(
+                f"[Diagnose] {source['name']}: {len(page.frames)} Frame(s) "
+                f"gefunden:\n  " + "\n  ".join(frame_info),
+                file=sys.stderr,
+            )
+            text = best_frame_text
         finally:
             browser.close()
         return text
