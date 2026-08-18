@@ -99,20 +99,39 @@ def fetch_via_login(login_url, target_url, email, password):
                 )
 
             page.goto(target_url, wait_until="networkidle", timeout=30000)
-            # Capture the main page text AND any iframes, since some
-            # older portals embed the actual content in an iframe rather
-            # than rendering it directly in the page.
-            parts = [page.inner_text("body")]
+            # This page's content (a feature/changes table) loads via
+            # JS/AJAX after the initial page load, and may live inside a
+            # nested frame. Give it time and actively look for it instead
+            # of grabbing whatever text exists immediately.
+            page.wait_for_timeout(4000)
+            text = None
             for frame in page.frames:
-                if frame == page.main_frame:
-                    continue
                 try:
-                    frame_text = frame.inner_text("body")
-                    if frame_text.strip():
-                        parts.append(frame_text)
+                    if frame.get_by_text(
+                        "Implemented Features", exact=False
+                    ).count() > 0:
+                        frame.wait_for_selector(
+                            "text=Implemented Features", timeout=15000
+                        )
+                        text = frame.inner_text("body")
+                        break
                 except Exception:
-                    pass
-            text = "\n\n".join(parts)
+                    continue
+            if text is None:
+                # Fallback: couldn't find the expected table anywhere -
+                # capture main page + all frames like before, so we at
+                # least get *something* to inspect/debug from.
+                parts = [page.inner_text("body")]
+                for frame in page.frames:
+                    if frame == page.main_frame:
+                        continue
+                    try:
+                        frame_text = frame.inner_text("body")
+                        if frame_text.strip():
+                            parts.append(frame_text)
+                    except Exception:
+                        pass
+                text = "\n\n".join(parts)
         finally:
             browser.close()
         return text
