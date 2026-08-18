@@ -93,9 +93,20 @@ def fetch_via_login_and_click(
 
             page.goto(base_url, wait_until="load", timeout=30000)
             page.wait_for_timeout(3000)
+
+            # Diagnostic: confirm what page we actually landed on before
+            # trying to click anything, so a failure here tells us whether
+            # we're really logged in rather than bounced back somewhere.
+            pre_click_snippet = re.sub(r"\s+", " ", page.inner_text("body"))[:300]
+            print(
+                f"[Diagnose] {label}: vor Klick-Navigation auf "
+                f"{page.url!r}. Anfang: {pre_click_snippet!r}",
+                file=sys.stderr,
+            )
+
             for step_text in click_path:
-                page.get_by_text(step_text, exact=True).first.click(
-                    timeout=10000
+                page.get_by_text(step_text, exact=False).first.click(
+                    timeout=15000
                 )
                 page.wait_for_timeout(2500)
 
