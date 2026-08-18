@@ -70,13 +70,21 @@ def fetch_via_login(login_url, target_url, email, password):
         try:
             page.goto(login_url, wait_until="networkidle", timeout=30000)
             # Standard HTML5 input types - robust even without knowing the
-            # exact form markup, since email/password fields almost always
-            # use these types.
-            page.fill('input[type="email"], input[name*="mail" i]', email)
-            page.fill('input[type="password"]', password)
+            # exact form markup. ':visible' filters out hidden duplicate
+            # fields some sites include (e.g. for other locales or
+            # autofill tricks) that otherwise get matched first.
+            page.fill(
+                'input[type="email"]:visible, '
+                'input[name*="login" i]:visible, '
+                'input[name*="mail" i]:visible, '
+                'input[name*="user" i]:visible',
+                email,
+            )
+            page.fill('input[type="password"]:visible', password)
             page.click(
-                'button:has-text("Login"), input[type="submit"], '
-                'button[type="submit"]'
+                'button:has-text("Login"):visible, '
+                'input[type="submit"]:visible, '
+                'button[type="submit"]:visible'
             )
             page.wait_for_load_state("networkidle", timeout=30000)
             page.goto(target_url, wait_until="networkidle", timeout=30000)
