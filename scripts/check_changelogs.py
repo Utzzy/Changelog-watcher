@@ -250,6 +250,19 @@ def main():
                 marker = hashlib.sha256(
                     page_text.encode("utf-8")
                 ).hexdigest()[:16]
+
+                # Diagnostic: always log a snippet of what was actually
+                # captured, so we can verify we're reading the right
+                # content even when no change is detected (this source is
+                # still being tuned).
+                snippet = re.sub(r"\s+", " ", page_text)[:500]
+                print(
+                    f"[Diagnose] {source['name']}: Marker={marker} "
+                    f"Textlänge={len(page_text)} Zeichen. "
+                    f"Anfang: {snippet!r}",
+                    file=sys.stderr,
+                )
+
                 old = state.get(sid)
                 if old != marker:
                     changed.append({
