@@ -430,6 +430,7 @@ def main():
         "geändert hat. Schreibe eine kurze, klare Zusammenfassung auf Deutsch "
         "für einen Anwender dieser Programme. Für jedes Programm: 2-5 "
         "Stichpunkte mit den wichtigsten neuen Funktionen/Änderungen/Bugfixes. "
+        "Wichtig sind Änderungen wie Versionsabhängigkeit von anderen Programmen oder Administrative Änderungen"
         "Keine Einleitung, kein Fazit, keine Werbesprache, nur die Fakten. "
         "Nutze Markdown-Überschriften pro Programm.\n\n"
         + "\n\n".join(sections)
